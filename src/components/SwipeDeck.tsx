@@ -8,6 +8,7 @@ import {
   GestureResponderEvent,
   PanResponderGestureState,
 } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import styles, { CARD_WIDTH, CARD_HEIGHT } from '../styles/swipeStyles';
 
 const { width } = Dimensions.get('window');
@@ -30,6 +31,26 @@ export type SwipeDeckProps = {
   onSwipe: (direction: 'left' | 'right', item: Item) => void;
   onImageLoad?: (id: string) => void;
   onImageError?: (id: string) => void;
+  deckStyles?: any; // estilos customizados (opcional)
+  isVideoDeck?: boolean; // se é um deck de vídeos
+};
+
+const VideoCard = ({ uri, style }: { uri: string; style: any }) => {
+  // O expo-video suporta URIs ph:// nativamente nas versões recentes.
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+
+  return (
+    <VideoView
+      player={player}
+      style={style}
+      contentMode="cover"
+      nativeControls={false}
+    />
+  );
 };
 
 const SwipeDeck = forwardRef<SwipeDeckHandle, SwipeDeckProps>((props, ref) => {
@@ -43,9 +64,12 @@ const SwipeDeck = forwardRef<SwipeDeckHandle, SwipeDeckProps>((props, ref) => {
     onSwipe,
     onImageLoad,
     onImageError,
+    deckStyles,
+    isVideoDeck = false,
   } = props;
 
-  // refs para sempre ter os valores atuais dentro das callbacks criadas uma vez
+  const effectiveStyles = deckStyles || styles;
+
   const itemsRef = useRef<Item[]>(items);
   const onSwipeRef = useRef(onSwipe);
 
@@ -57,16 +81,13 @@ const SwipeDeck = forwardRef<SwipeDeckHandle, SwipeDeckProps>((props, ref) => {
     onSwipeRef.current = onSwipe;
   }, [onSwipe]);
 
-  // position (local to deck)
   const positionRef = useRef({ x: 0, y: 0 });
   const [pos, setPos] = useState({ x: 0, y: 0 });
 
-  // expose some imperative handlers (usando itemsRef para pegar o topo atualizado)
   useImperativeHandle(ref, () => ({
     forceSwipe(direction: 'left' | 'right') {
       const top = itemsRef.current[0];
       if (!top) return;
-      // reset local pos immediately
       positionRef.current = { x: 0, y: 0 };
       setPos({ x: 0, y: 0 });
       onSwipeRef.current?.(direction, top);
@@ -75,9 +96,8 @@ const SwipeDeck = forwardRef<SwipeDeckHandle, SwipeDeckProps>((props, ref) => {
       positionRef.current = { x: 0, y: 0 };
       setPos({ x: 0, y: 0 });
     },
-  }), []); // sem dependências porque usamos refs para os valores mutáveis
+  }), []);
 
-  // pan responder: criado uma vez, mas usa itemsRef/onSwipeRef in runtime
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
@@ -94,19 +114,16 @@ const SwipeDeck = forwardRef<SwipeDeckHandle, SwipeDeckProps>((props, ref) => {
         const dx = gesture.dx;
         const currentItems = itemsRef.current;
         if (dx > swipeThreshold) {
-          // right
           const top = currentItems[0];
           if (top) onSwipeRef.current?.('right', top);
           positionRef.current = { x: 0, y: 0 };
           setPos({ x: 0, y: 0 });
         } else if (dx < -swipeThreshold) {
-          // left
           const top = currentItems[0];
           if (top) onSwipeRef.current?.('left', top);
           positionRef.current = { x: 0, y: 0 };
           setPos({ x: 0, y: 0 });
         } else {
-          // reset
           positionRef.current = { x: 0, y: 0 };
           setPos({ x: 0, y: 0 });
         }
@@ -114,7 +131,6 @@ const SwipeDeck = forwardRef<SwipeDeckHandle, SwipeDeckProps>((props, ref) => {
     })
   ).current;
 
-  // Render stack (no animations)
   const sourceItems = items.length === 0 ? Array.from({ length: 5 }).map((_, i) => ({ id: `ph-${i}`, uri: fallbackUri })) : items;
 
   return (
@@ -134,7 +150,7 @@ const SwipeDeck = forwardRef<SwipeDeckHandle, SwipeDeckProps>((props, ref) => {
             <View
               key={item.id}
               style={[
-                styles.card,
+                effectiveStyles.card,
                 {
                   zIndex: 100 - index,
                   transform: [{ translateX }, { translateY }, { rotate: rotateDeg }],
@@ -143,13 +159,17 @@ const SwipeDeck = forwardRef<SwipeDeckHandle, SwipeDeckProps>((props, ref) => {
               ]}
               {...(isTop ? panResponder.panHandlers : {})}
             >
-              <Image
-                source={{ uri }}
-                style={styles.image}
-                resizeMode="cover"
-                onError={() => onImageError?.(item.id)}
-                onLoad={() => onImageLoad?.(item.id)}
-              />
+              {isVideoDeck && isTop ? (
+                <VideoCard uri={uri} style={effectiveStyles.image} />
+              ) : (
+                <Image
+                  source={{ uri }}
+                  style={effectiveStyles.image}
+                  resizeMode="cover"
+                  onError={() => onImageError?.(item.id)}
+                  onLoad={() => onImageLoad?.(item.id)}
+                />
+              )}
             </View>
           );
         })

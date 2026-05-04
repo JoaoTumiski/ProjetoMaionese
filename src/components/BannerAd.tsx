@@ -1,6 +1,7 @@
 // src/components/BannerAd.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Theme from '../styles/theme';
 
 type BannerAdProps = {
   test?: boolean;          // quando true, mostra mock mesmo que o SDK esteja ativado
@@ -47,16 +48,16 @@ const styles = StyleSheet.create({
   mockBox: {
     width: '100%',
     height: 70,
-    backgroundColor: '#e5e5e5',
-    borderRadius: 10,
+    backgroundColor: Theme.colors.surface,
+    borderRadius: Theme.radius.md,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: Theme.colors.border,
   },
   text: {
     fontSize: 14,
-    color: '#555',
+    color: Theme.colors.textMuted,
     fontWeight: '600',
   },
 });

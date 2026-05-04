@@ -1,3 +1,4 @@
+// src/screens/AdsInfoScreen.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -7,7 +8,9 @@ import {
   Dimensions,
   Alert,
   Animated,
+  SafeAreaView,
 } from 'react-native';
+import Theme from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -18,16 +21,12 @@ type Props = {
 };
 
 export default function AdsInfoScreen({ onSkip, onDonate, onContinue }: Props) {
-  const [count, setCount] = useState<number>(2);
-  const pulse = useRef(new Animated.Value(1)).current;
+  const [count, setCount] = useState<number>(3);
   const fade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // entrance fade
-    Animated.timing(fade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-  }, [fade]);
+    Animated.timing(fade, { toValue: 1, duration: 800, useNativeDriver: true }).start();
 
-  useEffect(() => {
     const interval = setInterval(() => {
       setCount(prev => {
         if (prev <= 1) {
@@ -40,182 +39,166 @@ export default function AdsInfoScreen({ onSkip, onDonate, onContinue }: Props) {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    // pulse animation for donate button (only while enabled)
-    if (count === 0) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulse, { toValue: 1.06, duration: 700, useNativeDriver: true }),
-          Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
-        ])
-      ).start();
-    } else {
-      pulse.setValue(1);
-    }
-  }, [count, pulse]);
-
-  function handleHeaderSkip() {
-    if (count === 0) {
-      onSkip();
-    } else {
-      Alert.alert('Aguarde', `Você poderá pular em ${count} segundo(s).`);
-    }
+  function handleSkip() {
+    if (count === 0) onSkip();
+    else Alert.alert('Aguarde', `Você poderá pular em ${count} segundos.`);
   }
 
-  function handleStartWithoutDonate() {
-    if (count === 0) {
-      onContinue();
-    } else {
-      Alert.alert('Aguarde', `Você poderá iniciar em ${count} segundo(s).`);
-    }
+  function handleContinue() {
+    if (count === 0) onContinue();
+    else Alert.alert('Aguarde', `O acesso será liberado em ${count} segundos.`);
   }
 
   return (
-    <Animated.View style={[styles.container, { opacity: fade }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleHeaderSkip} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={[styles.skipText, count > 0 && styles.skipDisabled]}>
-            {count > 0 ? `Pular (${count})` : 'Pular'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.center}>
-        <View style={styles.iconWrap}>
-          <Text style={styles.icon}>📣</Text>
-        </View>
-
-        <Text style={styles.title}>Anúncios & Apoio</Text>
-
-        <Text style={styles.subtitle}>
-          O app é gratuito graças aos anúncios. Se preferir, faça uma doação única e nunca mais verá anúncios — além de receber outras bonificações.
-        </Text>
-
-        <View style={styles.actionsRow}>
-          <Animated.View style={{ transform: [{ scale: pulse }] }}>
-            <TouchableOpacity
-              style={styles.donateButton}
-              onPress={onDonate}
-              accessibilityLabel="Fazer doação"
-            >
-              <Text style={styles.donateText}>Fazer Doação</Text>
-            </TouchableOpacity>
-          </Animated.View>
-
-          <TouchableOpacity
-            style={[styles.ghostButton, count > 0 && styles.ghostDisabled]}
-            onPress={handleStartWithoutDonate}
-            accessibilityLabel="Iniciar sem doar"
-            activeOpacity={count === 0 ? 0.7 : 1}
-          >
-            <Text style={[styles.ghostText, count > 0 && styles.ghostTextDisabled]}>
-              {count === 0 ? 'Iniciar sem doar (com anúncios)' : `Iniciar em ${count}s`}
+    <SafeAreaView style={styles.container}>
+      <Animated.View style={[styles.content, { opacity: fade }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleSkip}>
+            <Text style={[styles.skipText, count > 0 && { opacity: 0.5 }]}>
+              {count > 0 ? `Pular (${count})` : 'Pular'}
             </Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.smallNote}>Doação libera anúncios e ativa benefícios permanentes.</Text>
-      </View>
+        <View style={styles.center}>
+          <View style={styles.iconBox}>
+            <Text style={styles.icon}>CG</Text>
+          </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerHint}>Você pode doar ou iniciar gratuitamente — sua escolha.</Text>
-      </View>
-    </Animated.View>
+          <Text style={styles.title}>Clear Galery</Text>
+          <Text style={styles.subtitle}>Contribuição Simbólica</Text>
+
+          <View style={styles.card}>
+            <Text style={styles.cardText}>
+              Nossa curadoria é mantida através de anúncios. Você pode remover todas as interrupções e desbloquear tudo por apenas R$ 1,00.
+            </Text>
+          </View>
+
+          <TouchableOpacity style={styles.primaryBtn} onPress={onDonate}>
+            <Text style={styles.primaryBtnText}>Apoiar com R$ 1,00</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.secondaryBtn, count > 0 && { opacity: 0.5 }]}
+            onPress={handleContinue}
+            activeOpacity={count === 0 ? 0.7 : 1}
+          >
+            <Text style={styles.secondaryBtnText}>
+              {count === 0 ? 'Continuar com anúncios' : `Aguarde ${count}s`}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerHint}>Sua curadoria, suas regras.</Text>
+        </View>
+      </Animated.View>
+    </SafeAreaView>
   );
 }
 
-const CARD_WIDTH = Math.min(760, width - 48);
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: Theme.colors.background },
+  content: { flex: 1 },
   header: {
-    height: 64,
-    paddingHorizontal: 20,
+    height: 70,
+    paddingHorizontal: 24,
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  skipText: { color: '#007AFF', fontSize: 15, fontWeight: '600' },
-  skipDisabled: { color: '#9ec6ff' },
-
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 24,
+  skipText: {
+    fontFamily: Theme.typography.fontFamily,
+    color: Theme.colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
   },
-  iconWrap: {
-    width: 92,
-    height: 92,
+  center: { flex: 1, paddingHorizontal: 40, alignItems: 'center', justifyContent: 'center' },
+  iconBox: {
+    width: 80,
+    height: 80,
     borderRadius: 24,
-    backgroundColor: '#f1f8ff',
+    backgroundColor: Theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
-    marginBottom: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
-  },
-  icon: { fontSize: 40 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
-  subtitle: {
-    maxWidth: CARD_WIDTH,
-    textAlign: 'center',
-    color: '#444',
-    fontSize: 15,
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-
-  actionsRow: {
-    width: '100%',
-    maxWidth: CARD_WIDTH,
-    flexDirection: 'column',
-    gap: 12,
-  },
-
-  donateButton: {
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: '#2f9e44',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 18,
-    shadowColor: '#2f9e44',
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
-  donateText: { color: '#fff', fontWeight: '800', fontSize: 16 },
-
-  ghostButton: {
-    marginTop: 12,
-    height: 48,
-    borderRadius: 12,
+    marginBottom: 32,
     borderWidth: 1,
-    borderColor: '#dbe9ff',
+    borderColor: Theme.colors.border,
+  },
+  icon: { fontSize: 32 },
+  title: {
+    fontFamily: Theme.typography.fontFamily,
+    fontSize: 32,
+    fontWeight: '700',
+    color: Theme.colors.text,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontFamily: Theme.typography.fontFamily,
+    fontSize: 14,
+    color: Theme.colors.primary,
+    fontWeight: '600',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginTop: 8,
+    marginBottom: 40,
+  },
+  card: {
+    backgroundColor: Theme.colors.surface,
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    marginBottom: 40,
+  },
+  cardText: {
+    fontFamily: Theme.typography.fontFamily,
+    fontSize: 15,
+    color: Theme.colors.textSecondary,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  primaryBtn: {
+    backgroundColor: Theme.colors.primaryContainer,
+    height: 64,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    width: '100%',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  ghostDisabled: { borderColor: '#f0f6ff', backgroundColor: '#fbfdff' },
-  ghostText: { color: '#0b63d6', fontWeight: '700', fontSize: 15 },
-  ghostTextDisabled: { color: '#9ec6ff' },
-
-  smallNote: {
-    marginTop: 14,
-    color: '#6b7280',
-    fontSize: 13,
-    textAlign: 'center',
-    maxWidth: CARD_WIDTH,
+  primaryBtnText: {
+    fontFamily: Theme.typography.fontFamily,
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 18,
   },
-
+  secondaryBtn: {
+    height: 64,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
+  secondaryBtnText: {
+    fontFamily: Theme.typography.fontFamily,
+    color: Theme.colors.textSecondary,
+    fontWeight: '600',
+    fontSize: 16,
+  },
   footer: {
-    padding: 18,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: '#f0f0f0',
+    padding: 32,
+    alignItems: 'center',
   },
-  footerHint: { textAlign: 'center', color: '#9aa4b2', fontSize: 13 },
+  footerHint: {
+    fontFamily: Theme.typography.fontFamily,
+    fontSize: 11,
+    color: Theme.colors.textMuted,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
 });

@@ -6,7 +6,9 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  SafeAreaView,
 } from 'react-native';
+import Theme from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -15,117 +17,143 @@ type Props = {
   onNext: () => void;
 };
 
-type Slide = {
-  key: string;
-  image: string;
-  title: string;
-  description: string;
-};
-
-const SLIDES: Slide[] = [
+const SLIDES = [
   {
-    key: 's1',
-    image: 'https://cdn-iconscout.com/illustration/free/thumb/onboarding-1310432-1111665.png',
-    title: 'Swipe rápido',
-    description: 'Deslize para a direita para manter e para a esquerda para enviar para a lixeira.',
+    title: 'Acervo Imaculado',
+    desc: 'Sua biblioteca de fotos é o seu legado. Remova o excesso e preserve apenas a perfeição.',
+    icon: 'CG',
   },
   {
-    key: 's2',
-    image: 'https://placehold.co/600x400?text=Selecione+Álbuns',
-    title: 'Escolha álbuns',
-    description: 'Selecione os álbuns que deseja revisar e organize suas fotos facilmente.',
+    title: 'Curadoria Ágil',
+    desc: 'Um deslize para a esquerda descarta. Para a direita, você eterniza. Simples, decisivo, meticuloso.',
+    icon: 'CG',
   },
   {
-    key: 's3',
-    image: 'https://placehold.co/600x400?text=Lixeita+e+Restaurar',
-    title: 'Lixeira e desfazer',
-    description: 'Itens vão para a lixeira onde você pode restaurar ou excluir definitivamente.',
+    title: 'Organização de Elite',
+    desc: 'Mova suas memórias para álbuns com a precisão de um arquivista profissional.',
+    icon: 'CG',
   },
 ];
 
-export default function OnboardingScreen({ onSkip, onNext }: Props): JSX.Element {
-  const [index, setIndex] = useState<number>(0);
-  const slide = SLIDES[index];
+export default function OnboardingScreen({ onSkip, onNext }: Props) {
+  const [index, setIndex] = useState(0);
 
   function handleNext() {
-    if (index < SLIDES.length - 1) {
-      setIndex(prev => prev + 1);
-    } else {
-      onNext();
-    }
+    if (index < SLIDES.length - 1) setIndex(index + 1);
+    else onNext();
   }
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.skipWrap} onPress={onSkip} accessibilityLabel="Pular">
-        <Text style={styles.skipText}>Pular</Text>
-      </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onSkip}>
+          <Text style={styles.skip}>Pular</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.content}>
-        <Image
-          source={{ uri: slide.image }}
-          style={styles.image}
-          resizeMode="contain"
-          accessible
-          accessibilityLabel={slide.title}
-        />
-
-        <Text style={styles.title}>{slide.title}</Text>
-        <Text style={styles.description}>{slide.description}</Text>
+        <View style={styles.iconBox}>
+          <Text style={styles.icon}>{SLIDES[index].icon}</Text>
+        </View>
+        <Text style={styles.title}>{SLIDES[index].title}</Text>
+        <Text style={styles.desc}>{SLIDES[index].desc}</Text>
       </View>
 
       <View style={styles.footer}>
         <View style={styles.pager}>
-          {SLIDES.map((s, i) => (
-            <View
-              key={s.key}
-              style={[styles.dot, i === index ? styles.dotActive : undefined]}
-              accessibilityLabel={`Página ${i + 1} de ${SLIDES.length}`}
-            />
+          {SLIDES.map((_, i) => (
+            <View key={i} style={[styles.dot, i === index && styles.dotActive]} />
           ))}
         </View>
 
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext} accessibilityLabel="Próximo">
-          <Text style={styles.nextText}>
-            {index < SLIDES.length - 1 ? 'Próximo' : 'Começar'}
-          </Text>
+        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+          <Text style={styles.nextText}>{index === SLIDES.length - 1 ? 'Começar' : 'Continuar'}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  skipWrap: { position: 'absolute', top: 16, right: 16, zIndex: 10 },
-  skipText: { color: '#007AFF', fontSize: 16 },
-  content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
-  image: { width: width * 0.8, height: width * 0.6, marginBottom: 20, backgroundColor: '#f2f2f2' },
-  title: { fontSize: 20, fontWeight: '700', marginTop: 8 },
-  description: { marginTop: 8, textAlign: 'center', color: '#666', fontSize: 14, paddingHorizontal: 10 },
-  footer: {
-    padding: 20,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
-    alignItems: 'center',
+  container: { flex: 1, backgroundColor: Theme.colors.background },
+  header: {
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingHorizontal: 24,
   },
-  nextButton: {
-    marginTop: 12,
-    height: 48,
-    borderRadius: 10,
-    backgroundColor: '#007AFF',
+  skip: {
+    fontFamily: Theme.typography.fontFamily,
+    color: Theme.colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  content: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'stretch',
+    paddingHorizontal: 40,
   },
-  nextText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  pager: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  iconBox: {
+    width: 100,
+    height: 100,
+    borderRadius: 30,
+    backgroundColor: Theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 40,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
+  icon: { fontSize: 44 },
+  title: {
+    fontFamily: Theme.typography.fontFamily,
+    fontSize: 32,
+    fontWeight: '700',
+    color: Theme.colors.text,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  desc: {
+    fontFamily: Theme.typography.fontFamily,
+    fontSize: 16,
+    color: Theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  footer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  pager: { flexDirection: 'row', alignItems: 'center', marginBottom: 40 },
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 8,
-    backgroundColor: '#ddd',
+    borderRadius: 4,
+    backgroundColor: Theme.colors.surfaceLight,
     marginHorizontal: 6,
   },
-  dotActive: { backgroundColor: '#007AFF', width: 12, height: 12, borderRadius: 12 },
+  dotActive: {
+    width: 24,
+    backgroundColor: Theme.colors.primary,
+  },
+  nextButton: {
+    height: 60,
+    backgroundColor: Theme.colors.primaryContainer,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  nextText: {
+    fontFamily: Theme.typography.fontFamily,
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 18,
+    letterSpacing: 0.5,
+  },
 });

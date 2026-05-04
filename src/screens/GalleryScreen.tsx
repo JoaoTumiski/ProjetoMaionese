@@ -1,3 +1,4 @@
+// src/screens/GalleryScreen.tsx
 import React from 'react';
 import {
   View,
@@ -9,6 +10,7 @@ import {
   Dimensions,
   SafeAreaView,
 } from 'react-native';
+import Theme from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -44,42 +46,80 @@ export default function GalleryScreen({ onBack, onOpenAlbum }: Props) {
             onPress={() => onOpenAlbum(item.id)}
             accessibilityLabel={`Abrir álbum ${item.title}`}
           >
-            <Image source={{ uri: item.cover }} style={styles.cover} />
+            <View style={styles.coverBox}>
+              <Image source={{ uri: item.cover }} style={styles.cover} />
+            </View>
             <View style={styles.cardInfo}>
               <Text style={styles.cardTitle}>{item.title}</Text>
               <Text style={styles.cardSub}>{item.count} itens</Text>
             </View>
+            <Text style={styles.chevron}>→</Text>
           </TouchableOpacity>
         )}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: Theme.colors.background },
   header: {
-    height: 64,
-    paddingHorizontal: 16,
+    height: 70,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
+    borderBottomWidth: 1,
+    borderColor: Theme.colors.border,
   },
-  back: { color: '#007AFF', fontSize: 16 },
-  title: { fontSize: 18, fontWeight: '700' },
-  list: { padding: 16 },
+  back: {
+    fontFamily: Theme.typography.fontFamily,
+    color: Theme.colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  title: {
+    fontFamily: Theme.typography.fontFamily,
+    fontSize: 18,
+    fontWeight: '700',
+    color: Theme.colors.text,
+  },
+  list: { padding: 24 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f7f9fc',
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: Theme.colors.surface,
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
   },
-  cover: { width: 76, height: 76, borderRadius: 8, marginRight: 12, backgroundColor: '#eee' },
+  coverBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 16,
+    backgroundColor: Theme.colors.surfaceLight,
+  },
+  cover: { width: '100%', height: '100%' },
   cardInfo: { flex: 1 },
-  cardTitle: { fontSize: 16, fontWeight: '700' },
-  cardSub: { color: '#666', marginTop: 6 },
+  cardTitle: {
+    fontFamily: Theme.typography.fontFamily,
+    fontSize: 16,
+    fontWeight: '700',
+    color: Theme.colors.text,
+  },
+  cardSub: {
+    fontFamily: Theme.typography.fontFamily,
+    color: Theme.colors.textSecondary,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  chevron: {
+    color: Theme.colors.textMuted,
+    fontSize: 20,
+    fontWeight: '300',
+  },
 });

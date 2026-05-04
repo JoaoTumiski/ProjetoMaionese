@@ -1,257 +1,253 @@
-import React, { useMemo, useState, useRef } from 'react';
+// src/screens/DonateScreen.tsx
+import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  ScrollView,
+  SafeAreaView,
   Alert,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Animated,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { PurchasesPackage } from 'react-native-purchases';
+import { purchaseService } from '../services/purchaseService';
+import { PremiumContext } from '../context/PremiumContext';
+import Theme from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 
 type Props = {
   onBack: () => void;
-  onDonate: (amount: number) => void;
 };
 
-const PRESETS = [1, 3, 5];
+const BENEFITS = [
+  { id: '1', text: 'Limpeza e Triagem de Vídeos', icon: 'videocam-outline' },
+  { id: '2', text: 'Organização de Vídeos por Álbuns', icon: 'folder-open-outline' },
+  { id: '3', text: 'Lixeira Ilimitada (Sem travas)', icon: 'trash-outline' },
+  { id: '4', text: 'Experiência Sem Anúncios', icon: 'volume-mute-outline' },
+  { id: '5', text: 'Apoie o Desenvolvimento', icon: 'heart-outline' },
+];
 
-export default function DonateScreen({ onBack, onDonate }: Props) {
-  const [custom, setCustom] = useState<string>('');
-  const [loadingAmount, setLoadingAmount] = useState<number | null>(null);
-  const [selected, setSelected] = useState<number | null>(null);
-  const pulse = useRef(new Animated.Value(1)).current;
+export default function DonateScreen({ onBack }: Props) {
+  const { isPremium, refreshStatus } = useContext(PremiumContext);
+  const [packages, setPackages] = useState<PurchasesPackage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [purchasing, setPurchasing] = useState(false);
 
-  const selectedAmount = useMemo(() => {
-    if (selected) return selected;
-    const parsed = parseFloat(custom.replace(',', '.'));
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-  }, [selected, custom]);
+  useEffect(() => {
+    async function loadOfferings() {
+      try {
+        const available = await purchaseService.getOfferings();
+        setPackages(available);
+      } catch (e) {
+        console.warn('Error loading offerings', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadOfferings();
+  }, []);
 
-  function startPulse() {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.06, duration: 700, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
-      ])
-    ).start();
-  }
-  function stopPulse() {
-    pulse.stopAnimation();
-    pulse.setValue(1);
-  }
-
-  function confirmAndDonate(amount: number) {
-    if (!(amount > 0)) {
-      Alert.alert('Valor inválido', 'Informe um valor de doação maior que zero.');
+  async function handlePurchase(pkg: PurchasesPackage) {
+    if (isPremium) {
+      Alert.alert('Acesso Ativo', 'Você já é um apoiador premium!');
       return;
     }
+    
+    setPurchasing(true);
+    const success = await purchaseService.purchasePackage(pkg);
+    setPurchasing(false);
 
-    // exibir agradecimento discreto para doações maiores
-    const extraThanks = amount >= 3 ? '\n\nAgradecemos muito pelo suporte — significa muito para nós.' : '';
-
-    setLoadingAmount(amount);
-    Alert.alert(
-      'Confirmar doação',
-      `Deseja confirmar a doação de R$ ${amount.toFixed(2)}?${extraThanks}`,
-      [
-        { text: 'Cancelar', style: 'cancel', onPress: () => setLoadingAmount(null) },
-        {
-          text: 'Confirmar',
-          onPress: () => {
-            onDonate(amount);
-            setLoadingAmount(null);
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  }
-
-  function handlePreset(amount: number) {
-    setSelected(amount);
-    startPulse();
-    // small delay to show selection state before confirm modal
-    setTimeout(() => confirmAndDonate(amount), 220);
-  }
-
-  function handleCustom() {
-    const parsed = parseFloat(custom.replace(',', '.'));
-    if (Number.isNaN(parsed) || parsed <= 0) {
-      Alert.alert('Valor inválido', 'Digite um valor numérico maior que zero.');
-      return;
+    if (success) {
+      await refreshStatus();
+      Alert.alert('Sucesso!', 'Obrigado por apoiar a Clear Galery. Agora você é Premium!');
+      onBack();
+    } else {
+      // O erro já é logado no serviço ou cancelado pelo usuário
     }
-    setSelected(null);
-    startPulse();
-    setTimeout(() => confirmAndDonate(parsed), 220);
+  }
+
+  async function handleRestore() {
+    setPurchasing(true);
+    const success = await purchaseService.restorePurchases();
+    setPurchasing(false);
+
+    if (success) {
+      await refreshStatus();
+      Alert.alert('Restauração', 'Suas compras foram restauradas com sucesso!');
+      onBack();
+    } else {
+      Alert.alert('Restauração', 'Não encontramos assinaturas ativas para esta conta.');
+    }
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.select({ ios: 'padding', android: undefined })}
-    >
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={24} color={Theme.colors.primary} />
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
+        <Text style={styles.title}>Apoiar Projeto</Text>
+        <View style={{ width: 60 }} />
       </View>
 
-      <View style={styles.content}>
-        <Text style={styles.title}>Apoie o desenvolvimento</Text>
-
-        <Text style={styles.body}>
-          Todas as doações removem anúncios permanentemente e ativam as mesmas bonificações no app.
-          Obrigado por considerar apoiar o projeto.
-        </Text>
-
-        <View style={styles.presetWrap}>
-          {PRESETS.map(p => {
-            const active = selected === p;
-            return (
-              <TouchableOpacity
-                key={p}
-                style={[styles.presetButton, active && styles.presetButtonActive]}
-                onPress={() => handlePreset(p)}
-                accessibilityLabel={`Doar ${p} reais`}
-              >
-                <Text style={[styles.presetText, active && styles.presetTextActive]}>R$ {p}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <View style={styles.customRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Outro valor (ex: 2.50)"
-            keyboardType="decimal-pad"
-            value={custom}
-            onChangeText={text => {
-              setCustom(text);
-              setSelected(null);
-            }}
-            accessibilityLabel="Campo para outro valor de doação"
-            returnKeyType="done"
-            onSubmitEditing={handleCustom}
-          />
-          <Animated.View style={{ transform: [{ scale: pulse }] }}>
-            <TouchableOpacity style={styles.customBtn} onPress={handleCustom}>
-              <Text style={styles.customBtnText}>Doar</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-
-        <View style={styles.noteBox}>
-          <Text style={styles.noteTitle}>Observações</Text>
-          <Text style={styles.noteText}>
-            Todas as doações recebem as mesmas bonificações: remoção permanente de anúncios e benefícios
-            dentro do app. Doações maiores significam muito para nós — agradecemos imensamente o apoio.
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.heroSection}>
+          <View style={styles.premiumBadge}>
+            <Ionicons name="heart" size={32} color={Theme.colors.primary} />
+          </View>
+          <Text style={styles.heading}>Apoie com quanto quiser</Text>
+          <Text style={styles.subheading}>
+            Contribua a partir de apenas R$ 1,00 para desbloquear funções extras e ajudar a manter o app no ar.
           </Text>
         </View>
 
-        {loadingAmount !== null && (
-          <Text style={styles.loadingText}>Confirmando doação R$ {loadingAmount.toFixed(2)}...</Text>
-        )}
-      </View>
+        <View style={styles.benefitsList}>
+          {BENEFITS.map((b) => (
+            <View key={b.id} style={styles.benefitItem}>
+              <View style={styles.benefitIconBox}>
+                <Ionicons name={b.icon as any} size={20} color={Theme.colors.primary} />
+              </View>
+              <Text style={styles.benefitText}>{b.text}</Text>
+            </View>
+          ))}
+        </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerHint}>
-          O pagamento será processado pela loja do dispositivo (IAP). Você será notificado ao concluir.
+        <View style={styles.offersSection}>
+          {loading ? (
+            <ActivityIndicator color={Theme.colors.primary} size="large" />
+          ) : packages.length > 0 ? (
+            packages.map((pkg) => (
+              <TouchableOpacity
+                key={pkg.identifier}
+                style={styles.packageCard}
+                onPress={() => handlePurchase(pkg)}
+                disabled={purchasing}
+              >
+                <View>
+                  <Text style={styles.packageTitle}>{pkg.product.title}</Text>
+                  <Text style={styles.packageDesc}>{pkg.product.description}</Text>
+                </View>
+                <Text style={styles.packagePrice}>{pkg.product.priceString}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.noOffers}>
+              <Text style={styles.noOffersText}>
+                Nenhum plano disponível no momento. Verifique sua conexão.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <TouchableOpacity style={styles.restoreBtn} onPress={handleRestore} disabled={purchasing}>
+          <Text style={styles.restoreBtnText}>Já contribuiu antes? Restaurar Acesso</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.securityNote}>
+          Sua contribuição ajuda a cobrir custos de servidor e ferramentas. Obrigado pelo apoio!
         </Text>
-      </View>
-    </KeyboardAvoidingView>
+      </ScrollView>
+
+      {purchasing && (
+        <View style={styles.overlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.overlayText}>Processando...</Text>
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
 
-const CARD_WIDTH = Math.min(760, width - 48);
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
-  header: { height: 64, paddingHorizontal: 20, justifyContent: 'center' },
-  backText: { color: '#0b63d6', fontSize: 16, fontWeight: '600' },
-
-  content: { flex: 1, paddingHorizontal: 20, paddingTop: 6 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 8, textAlign: 'left' },
-  body: { color: '#444', fontSize: 15, marginBottom: 18, maxWidth: CARD_WIDTH },
-
-  presetWrap: {
+  container: { flex: 1, backgroundColor: Theme.colors.background },
+  header: {
+    height: 64,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderColor: Theme.colors.border,
   },
-  presetButton: {
-    flex: 1,
-    marginHorizontal: 6,
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: '#f2f6fb',
+  backBtn: { flexDirection: 'row', alignItems: 'center' },
+  backText: { color: Theme.colors.primary, fontSize: 16, fontWeight: '600', marginLeft: 4 },
+  title: { fontSize: 18, fontWeight: '700', color: Theme.colors.text },
+  content: { padding: 24, paddingBottom: 40 },
+  heroSection: { alignItems: 'center', marginBottom: 32 },
+  premiumBadge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 179, 180, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e6eefc',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Theme.colors.primary,
   },
-  presetButtonActive: {
-    backgroundColor: '#0b63d6',
-    borderColor: '#0b63d6',
-    shadowColor: '#0b63d6',
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
+  heading: { fontSize: 32, fontWeight: '800', color: Theme.colors.text, marginBottom: 8 },
+  subheading: {
+    fontSize: 15,
+    color: Theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 20,
   },
-  presetText: { color: '#0b63d6', fontWeight: '700', fontSize: 15 },
-  presetTextActive: { color: '#fff' },
-
-  customRow: {
+  benefitsList: {
+    backgroundColor: Theme.colors.surface,
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
+  benefitItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  benefitIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: Theme.colors.surfaceContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  benefitText: { fontSize: 15, color: Theme.colors.text, fontWeight: '500' },
+  offersSection: { marginBottom: 24 },
+  packageCard: {
+    backgroundColor: Theme.colors.surface,
+    borderRadius: 20,
+    padding: 24,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
-    gap: 8,
+    borderWidth: 2,
+    borderColor: Theme.colors.border,
   },
-  input: {
-    flex: 1,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e6eefc',
-    paddingHorizontal: 12,
-    fontSize: 15,
-    backgroundColor: '#fbfdff',
+  packageTitle: { fontSize: 18, fontWeight: '700', color: Theme.colors.text, marginBottom: 4 },
+  packageDesc: { fontSize: 13, color: Theme.colors.textSecondary },
+  packagePrice: { fontSize: 20, fontWeight: '800', color: Theme.colors.primary },
+  restoreBtn: { padding: 12, alignItems: 'center', marginBottom: 20 },
+  restoreBtnText: { color: Theme.colors.textSecondary, fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
+  noOffers: { padding: 40, alignItems: 'center' },
+  noOffersText: { color: Theme.colors.textMuted, textAlign: 'center' },
+  securityNote: {
+    fontSize: 12,
+    color: Theme.colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
   },
-  customBtn: {
-    marginLeft: 8,
-    height: 48,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#0b63d6',
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.7)',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 999,
   },
-  customBtnText: { color: '#fff', fontWeight: '700' },
-
-  noteBox: {
-    marginTop: 6,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#f7f9fc',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eef5ff',
-  },
-  noteTitle: { fontSize: 14, fontWeight: '700', marginBottom: 6 },
-  noteText: { color: '#555', fontSize: 14 },
-
-  loadingText: { marginTop: 12, color: '#333', fontWeight: '600', textAlign: 'center' },
-
-  footer: {
-    padding: 18,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: '#f0f0f0',
-  },
-  footerHint: { textAlign: 'center', color: '#9aa4b2', fontSize: 13 },
+  overlayText: { color: '#fff', marginTop: 16, fontSize: 16, fontWeight: '600' },
 });

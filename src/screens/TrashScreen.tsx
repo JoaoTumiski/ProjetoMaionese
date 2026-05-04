@@ -15,6 +15,10 @@ import { getTrash, removeFromTrash, clearTrash, TrashItem } from '../storage/tra
 import { PremiumContext } from '../context/PremiumContext';
 import { useAdManager } from '../context/AdManagerContext';
 import FullscreenVideoAdMock from '../components/FullscreenVideoAd';
+import Theme from '../styles/theme';
+
+const PADDING = 20;
+const THUMB = 60;
 
 type Props = {
   onBack: () => void;
@@ -34,7 +38,6 @@ export default function TrashScreen({ onBack, onRestore, onDeletePermanent, onAd
   const adManager = useAdManager();
   const [showAd, setShowAd] = useState(false);
 
-  // store pending action to run after ad finishes
   const pendingActionRef = useRef<null | 'bulkDelete'>(null);
 
   async function load() {
@@ -68,13 +71,11 @@ export default function TrashScreen({ onBack, onRestore, onDeletePermanent, onAd
       }
     } catch (e) {
       console.warn('handleRestore error', e);
-      Alert.alert('Erro', 'Não foi possível restaurar o item.');
     } finally {
       setProcessing(false);
     }
   }
 
-  // função que realmente executa a exclusão em lote (fatorada para chamar após o ad)
   async function performBulkDeleteConfirmed() {
     if (processing) return;
     setProcessing(true);
@@ -83,17 +84,14 @@ export default function TrashScreen({ onBack, onRestore, onDeletePermanent, onAd
 
       if (idsToDelete.length > 0) {
         try {
-          const result = await MediaLibrary.deleteAssetsAsync(idsToDelete);
-          console.log('MediaLibrary.deleteAssetsAsync result:', result);
+          await MediaLibrary.deleteAssetsAsync(idsToDelete);
         } catch (e) {
           console.warn('MediaLibrary.deleteAssetsAsync failed (continuing):', e);
         }
       }
 
       await clearTrash();
-
       items.forEach(i => onDeletePermanent?.(i.id));
-
       setItems([]);
       Alert.alert('Excluídos', 'Itens excluídos permanentemente.');
     } catch (e) {
@@ -104,8 +102,6 @@ export default function TrashScreen({ onBack, onRestore, onDeletePermanent, onAd
     }
   }
 
-  // fluxo ao confirmar exclusão: se premium -> exclui direto.
-  // se não for premium -> exibe ad (forçando override) e só após fechar o ad executa exclusão.
   async function handleBulkDelete() {
     if (items.length === 0) {
       Alert.alert('Lixeira vazia', 'Não há itens para excluir.');
@@ -122,68 +118,41 @@ export default function TrashScreen({ onBack, onRestore, onDeletePermanent, onAd
           style: 'destructive',
           onPress: async () => {
             if (processing) return;
-
-            // premium => exclui imediatamente
             if (effectivePremium) {
               await performBulkDeleteConfirmed();
               return;
             }
-
-            // não premium => mostrar ad antes de excluir
             try {
-              // Forçar que a próxima requisição de ad seja permitida (ignora cooldown uma vez)
               await adManager.forceAllowOnce();
-
-              // requestShowAd() já marca lastShown + nextAllowed se retornar true
               const allowed = await adManager.requestShowAd();
               if (!allowed) {
-                // não permitido por algum motivo (premiumLoading ou erro)
-                Alert.alert('Ad', 'Não foi possível exibir o anúncio agora. Tente novamente mais tarde.');
+                Alert.alert('Ad', 'Não foi possível exibir o anúncio agora.');
                 return;
               }
-
-              // marca ação pendente e abre o mock ad
               pendingActionRef.current = 'bulkDelete';
               setShowAd(true);
             } catch (e) {
               console.warn('bulkDelete ad flow error', e);
-              Alert.alert('Erro', 'Não foi possível iniciar o fluxo de anúncios.');
             }
           },
         },
-      ],
-      { cancelable: true }
+      ]
     );
   }
 
-  // handlers para o mock ad
-  async function handleAdClose(reason?: string) {
+  async function handleAdClose() {
     setShowAd(false);
-    // se tivermos uma ação pendente, execute-a
     if (pendingActionRef.current === 'bulkDelete') {
       pendingActionRef.current = null;
-      // executa exclusão após fechar ad
       await performBulkDeleteConfirmed();
     }
   }
 
   async function handleAdFinished() {
-    // ad terminou naturalmente; devemos fechar o modal e executar ação
     setShowAd(false);
     if (pendingActionRef.current === 'bulkDelete') {
       pendingActionRef.current = null;
       await performBulkDeleteConfirmed();
-    }
-  }
-
-  function handleAddSpace() {
-    if (onAddSpace) {
-      onAddSpace();
-    } else {
-      Alert.alert(
-        'Adicionar espaço',
-        'Opções para aumentar o espaço da lixeira serão oferecidas (doação / assistir anúncio).'
-      );
     }
   }
 
@@ -193,28 +162,19 @@ export default function TrashScreen({ onBack, onRestore, onDeletePermanent, onAd
         <TouchableOpacity onPress={onBack}>
           <Text style={styles.back}>Voltar</Text>
         </TouchableOpacity>
-
         <Text style={styles.title}>Lixeira</Text>
-
-        {!effectivePremium ? (
-          <TouchableOpacity onPress={handleAddSpace}>
-            <Text style={styles.addSpace}>Adicionar espaço</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 120 }} />
-        )}
+        <View style={{ width: 64 }} />
       </View>
 
       <View style={styles.infoRow}>
         <Text style={styles.infoText}>
           Itens na lixeira: {effectivePremium ? `${items.length}` : `${items.length}/100`}
         </Text>
-        <Text style={styles.infoHint}>Restaurar itens individualmente, excluir em lote abaixo.</Text>
       </View>
 
       {loading ? (
         <View style={styles.empty}>
-          <Text>Carregando...</Text>
+          <Text style={{ color: Theme.colors.textSecondary }}>Carregando...</Text>
         </View>
       ) : items.length === 0 ? (
         <View style={styles.empty}>
@@ -229,19 +189,16 @@ export default function TrashScreen({ onBack, onRestore, onDeletePermanent, onAd
             <View style={styles.row}>
               <Image source={{ uri: item.uri }} style={styles.thumb} />
               <View style={styles.info}>
-                <Text style={styles.name}>{item.filename ?? item.id}</Text>
-                <Text style={styles.date}>Removido: {new Date(item.deletedAt).toLocaleString()}</Text>
+                <Text style={styles.name} numberOfLines={1}>{item.filename ?? item.id}</Text>
+                <Text style={styles.date}>Removido em {new Date(item.deletedAt).toLocaleDateString()}</Text>
               </View>
-
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={styles.restoreBtn}
-                  onPress={() => handleRestore(item.id)}
-                  disabled={processing}
-                >
-                  <Text style={styles.restoreText}>Restaurar</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.restoreBtn}
+                onPress={() => handleRestore(item.id)}
+                disabled={processing}
+              >
+                <Text style={styles.restoreText}>Restaurar</Text>
+              </TouchableOpacity>
             </View>
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -254,95 +211,69 @@ export default function TrashScreen({ onBack, onRestore, onDeletePermanent, onAd
           onPress={handleBulkDelete}
           disabled={items.length === 0 || processing}
         >
-          <Text style={[styles.deleteAllText, items.length === 0 && styles.deleteAllTextDisabled]}>
-            Excluir {effectivePremium ? `${items.length}` : `${items.length}/100`}
-          </Text>
+          <Text style={styles.deleteAllText}>Excluir Tudo</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Fullscreen mock ad */}
       <FullscreenVideoAdMock
         visible={showAd}
         duration={15}
         skippableAfter={5}
-        onShown={() => console.log('mock ad shown')}
         onFinished={handleAdFinished}
-        onClose={() => handleAdClose('closed')}
+        onClose={handleAdClose}
       />
     </SafeAreaView>
   );
 }
 
-const THUMB = 64;
-const PADDING = 16;
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: Theme.colors.background },
   header: {
-    height: 64,
-    paddingHorizontal: PADDING,
+    height: 70,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
+    borderBottomWidth: 1,
+    borderColor: Theme.colors.border,
   },
-  back: { color: '#0b63d6', fontSize: 16, fontWeight: '600' },
-  title: { fontSize: 18, fontWeight: '700' },
-  addSpace: { color: '#0b63d6', fontSize: 14, fontWeight: '600' },
-
-  infoRow: {
-    paddingHorizontal: PADDING,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: '#f1f5f9',
-    backgroundColor: '#fbfdff',
-  },
-  infoText: { fontWeight: '700', color: '#333' },
-  infoHint: { marginTop: 6, color: '#666', fontSize: 13 },
-
-  list: { padding: PADDING },
+  back: { color: Theme.colors.primary, fontSize: 16, fontWeight: '600' },
+  title: { fontSize: 18, fontWeight: '700', color: Theme.colors.text },
+  infoRow: { padding: 24 },
+  infoText: { fontWeight: '700', color: Theme.colors.text, fontSize: 16 },
+  list: { padding: 24 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
+    backgroundColor: Theme.colors.surface,
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
   },
-  thumb: { width: THUMB, height: THUMB, borderRadius: 8, marginRight: 12, backgroundColor: '#eee' },
+  thumb: { width: THUMB, height: THUMB, borderRadius: 12, marginRight: 16 },
   info: { flex: 1 },
-  name: { fontWeight: '700', fontSize: 15 },
-  date: { color: '#777', marginTop: 6, fontSize: 13 },
-  actions: { flexDirection: 'column' },
-
+  name: { fontWeight: '700', fontSize: 15, color: Theme.colors.text },
+  date: { color: Theme.colors.textMuted, marginTop: 4, fontSize: 12 },
   restoreBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: '#2f9e44',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  restoreText: { color: '#fff', fontWeight: '700' },
-
-  footer: {
-    padding: PADDING,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: '#f0f0f0',
-  },
-  deleteAllBtn: {
-    height: 52,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: '#ff4d4f',
+    backgroundColor: Theme.colors.primaryContainer,
+  },
+  restoreText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  footer: { padding: 24, borderTopWidth: 1, borderColor: Theme.colors.border },
+  deleteAllBtn: {
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: Theme.colors.primaryContainer,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  deleteAllDisabled: { backgroundColor: '#ffecec' },
-  deleteAllText: { color: '#fff', fontWeight: '800', fontSize: 16 },
-  deleteAllTextDisabled: { color: '#ff9b9b' },
-
+  deleteAllDisabled: { opacity: 0.5 },
+  deleteAllText: { color: '#fff', fontWeight: '700', fontSize: 18 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { color: '#666', fontSize: 16 },
+  emptyText: { color: Theme.colors.textSecondary, fontSize: 16 },
 });

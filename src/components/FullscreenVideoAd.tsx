@@ -12,13 +12,14 @@ import {
   BackHandler,
   Platform,
 } from 'react-native';
+import Theme from '../styles/theme';
 
 type Props = {
   visible: boolean;
-  test?: boolean; // sempre mock aqui
+  test?: boolean;
   hidden?: boolean;
-  duration?: number; // total ad seconds
-  skippableAfter?: number; // seconds until skip enabled
+  duration?: number;
+  skippableAfter?: number;
   onShown?: () => void;
   onFinished?: () => void;
   onClose?: (reason?: 'skipped' | 'finished' | 'user_closed' | 'error') => void;
@@ -56,11 +57,8 @@ export default function FullscreenVideoAdMock({
 
     try {
       onShown?.();
-    } catch (e) {
-      console.warn('onShown handler error', e);
-    }
+    } catch (e) {}
 
-    // start progress animation
     Animated.timing(progress, {
       toValue: 1,
       duration: duration * 1000,
@@ -68,7 +66,6 @@ export default function FullscreenVideoAdMock({
       useNativeDriver: false,
     }).start();
 
-    // countdown
     setSecondsLeft(duration);
     setSkipEnabled(false);
 
@@ -79,7 +76,6 @@ export default function FullscreenVideoAdMock({
           clearIntervalIfExists();
           handleFinish();
         }
-        // enable skip when below threshold
         if (next <= duration - skippableAfter) {
           setSkipEnabled(true);
         }
@@ -87,9 +83,7 @@ export default function FullscreenVideoAdMock({
       });
     }, 1000);
 
-    // prevent hardware back to close (common behavior for interstitials)
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // on Android we can block back while ad visible (optional)
       if (isVisible) return true;
       return false;
     });
@@ -98,7 +92,6 @@ export default function FullscreenVideoAdMock({
       clearIntervalIfExists();
       backHandler.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible]);
 
   function clearIntervalIfExists() {
@@ -115,88 +108,63 @@ export default function FullscreenVideoAdMock({
 
   function handleFinish() {
     cleanupTimer();
-    try {
-      onFinished?.();
-    } catch (e) {
-      console.warn('onFinished handler error', e);
-    }
+    onFinished?.();
     setIsVisible(false);
-    try {
-      onClose?.('finished');
-    } catch (e) {
-      console.warn('onClose handler error', e);
-    }
+    onClose?.('finished');
   }
 
   function handleSkip() {
     if (!skipEnabled) return;
     cleanupTimer();
-    try {
-      onClose?.('skipped');
-    } catch (e) {
-      console.warn('onClose handler error', e);
-    }
+    onClose?.('skipped');
     setIsVisible(false);
   }
 
   function handleUserClose() {
-    // allow user to close manually (optional)
     cleanupTimer();
-    try {
-      onClose?.('user_closed');
-    } catch (e) {
-      console.warn('onClose handler error', e);
-    }
+    onClose?.('user_closed');
     setIsVisible(false);
   }
 
-  // progress interpolation for width
   const progressWidth = progress.interpolate({
     inputRange: [0, 1],
     outputRange: [0, width],
   });
 
-  if (!test) {
-    // caso futuramente troque para SDK real, aqui você pode renderizar o player do SDK
-    // mantendo a mesma API de props/handlers
-  }
-
   return (
     <Modal visible={isVisible} animationType="fade" transparent={false}>
-      <View style={styles.container} accessible accessibilityLabel="Ad full screen modal">
-        {/* Fake video area */}
+      <View style={styles.container}>
         <View style={styles.videoArea}>
-          <Text style={styles.adBadge}>Ad • Patrocinado</Text>
+          <Text style={styles.adBadge}>Anúncio</Text>
           <View style={styles.fakeVideo}>
-            <Text style={styles.playLabel}>[ Vídeo - Mock ]</Text>
+            <Text style={styles.brandTitle}>Clear Galery</Text>
+            <Text style={styles.brandSubtitle}>Curadoria de Elite</Text>
             <Text style={styles.timerLabel}>{secondsLeft}s</Text>
           </View>
 
-          {/* progress bar */}
           <View style={styles.progressBarBackground}>
             <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
           </View>
         </View>
 
-        {/* Controls */}
         <View style={styles.controls}>
           <TouchableOpacity
             onPress={handleSkip}
-            accessibilityLabel="Skip ad"
             style={[styles.skipButton, skipEnabled ? styles.skipEnabled : styles.skipDisabled]}
             activeOpacity={skipEnabled ? 0.8 : 1}
           >
-            <Text style={styles.skipText}>{skipEnabled ? 'Skip' : `Skip in ${Math.max(0, Math.min(skippableAfter, secondsLeft))}s`}</Text>
+            <Text style={styles.skipText}>
+              {skipEnabled ? 'Pular' : `Aguarde ${Math.max(0, secondsLeft - (duration - skippableAfter))}s`}
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleUserClose} accessibilityLabel="Close ad" style={styles.closeButton}>
+          <TouchableOpacity onPress={handleUserClose} style={styles.closeButton}>
             <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Footer optional: advertiser name or CTA */}
         <View style={styles.footer}>
-          <Text style={styles.advertiser}>Anúncio simulado — fornecido por MockNet</Text>
+          <Text style={styles.advertiser}>Obrigado por apoiar a curadoria digital</Text>
         </View>
       </View>
     </Modal>
@@ -206,109 +174,131 @@ export default function FullscreenVideoAdMock({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000', // preto para vídeo
+    backgroundColor: Theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
   videoArea: {
     width: '100%',
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 48 : 24,
+    paddingTop: Platform.OS === 'ios' ? 60 : 30,
     alignItems: 'center',
   },
   adBadge: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 30,
-    left: 14,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    color: '#fff',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    top: Platform.OS === 'ios' ? 64 : 34,
+    left: 20,
+    backgroundColor: Theme.colors.surfaceLight,
+    color: Theme.colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
     fontWeight: '700',
     overflow: 'hidden',
     zIndex: 10,
-    fontSize: 12,
+    fontSize: 10,
+    letterSpacing: 1.5,
     textTransform: 'uppercase',
-    // Note: Text inside TouchableOpacity expects color prop; we'll style text below
   } as any,
   fakeVideo: {
-    width: '94%',
-    height: height * 0.62,
-    backgroundColor: '#222',
-    borderRadius: 12,
+    width: '90%',
+    height: height * 0.6,
+    backgroundColor: Theme.colors.surface,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    marginTop: 28,
+    marginTop: 40,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
   },
   playLabel: {
-    color: '#ddd',
-    fontSize: 20,
+    fontFamily: Theme.typography.fontFamily,
+    color: Theme.colors.text,
+    fontSize: 24,
     fontWeight: '700',
+    letterSpacing: 1,
+  },
+  brandSubtitle: {
+    fontFamily: Theme.typography.fontFamily,
+    color: Theme.colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   timerLabel: {
-    color: '#aaa',
+    fontFamily: Theme.typography.fontFamily,
+    color: Theme.colors.textMuted,
     fontSize: 16,
-    marginTop: 8,
+    marginTop: 24,
   },
   progressBarBackground: {
-    height: 6,
+    height: 4,
     width: '100%',
-    backgroundColor: '#333',
-    borderRadius: 4,
-    marginTop: 16,
+    backgroundColor: Theme.colors.border,
+    marginTop: 32,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#33c3ff',
+    backgroundColor: Theme.colors.primary,
   },
   controls: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 44 : 20,
-    right: 12,
+    top: Platform.OS === 'ios' ? 60 : 30,
+    right: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   } as any,
   skipButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    backgroundColor: Theme.colors.surface,
   },
   skipEnabled: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderColor: Theme.colors.primary,
   },
   skipDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: Theme.colors.border,
+    opacity: 0.5,
   },
   skipText: {
-    color: '#fff',
+    fontFamily: Theme.typography.fontFamily,
+    color: Theme.colors.text,
     fontWeight: '700',
+    fontSize: 13,
   },
   closeButton: {
-    marginLeft: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   closeText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    color: Theme.colors.text,
+    fontSize: 18,
+    fontWeight: '500',
   },
   footer: {
     width: '100%',
-    padding: 12,
+    padding: 32,
     alignItems: 'center',
-    backgroundColor: 'transparent',
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 28 : 12,
+    bottom: Platform.OS === 'ios' ? 40 : 20,
   },
   advertiser: {
-    color: '#bbb',
-    fontSize: 13,
+    fontFamily: Theme.typography.fontFamily,
+    color: Theme.colors.textMuted,
+    fontSize: 12,
+    letterSpacing: 0.5,
   },
 });
