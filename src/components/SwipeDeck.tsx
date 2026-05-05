@@ -9,7 +9,7 @@ import {
   PanResponderGestureState,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import styles, { CARD_WIDTH, CARD_HEIGHT } from '../styles/swipeStyles';
+import styles, { CARD_WIDTH, CARD_HEIGHT } from '../screens/styles/SwipeScreenStyles';
 
 const { width } = Dimensions.get('window');
 const DEFAULT_SWIPE_THRESHOLD = width * 0.28;

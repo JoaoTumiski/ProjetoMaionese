@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as MediaLibrary from 'expo-media-library';
-import styles from '../styles/swipeStylesOrganize';
+import styles from './styles/OrganizeSwipeScreenStyles';
 import SwipeDeck, { SwipeDeckHandle, Item as DeckItem } from '../components/SwipeDeck';
 import { PremiumContext } from '../context/PremiumContext';
 import Theme from '../styles/theme';

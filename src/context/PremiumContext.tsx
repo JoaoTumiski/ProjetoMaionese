@@ -44,9 +44,17 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
       try {
         // Primeiro tenta ler o cache rápido para não travar a UI
         const cached = await AsyncStorage.getItem(STORAGE_KEY);
+        const isManual = await AsyncStorage.getItem(STORAGE_KEY + '_manual');
+
         if (mounted && cached !== null) {
           setIsPremium(cached === '1' || DEBUG_FORCE_PREMIUM);
-          setLoading(false); // Libera o loading se tiver cache
+          setLoading(false);
+        }
+
+        // Se for manual, não sobrescreve com o status real da loja (para debug)
+        if (isManual === '1') {
+          if (mounted) setLoading(false);
+          return;
         }
 
         // Inicializa o serviço real de compras
@@ -73,6 +81,8 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsPremium(v);
       await AsyncStorage.setItem(STORAGE_KEY, v ? '1' : '0');
+      // Marca como manual para não ser sobrescrito pelo check da loja no próximo restart
+      await AsyncStorage.setItem(STORAGE_KEY + '_manual', '1');
     } catch (e) {
       console.warn('PremiumProvider: failed to persist premium flag', e);
       setIsPremium(v);

@@ -3,7 +3,6 @@ import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
@@ -16,6 +15,7 @@ import { PurchasesPackage } from 'react-native-purchases';
 import { purchaseService } from '../services/purchaseService';
 import { PremiumContext } from '../context/PremiumContext';
 import Theme from '../styles/theme';
+import styles from './styles/DonateScreenStyles';
 
 const { width } = Dimensions.get('window');
 
@@ -26,8 +26,8 @@ type Props = {
 const BENEFITS = [
   { id: '1', text: 'Limpeza e Triagem de Vídeos', icon: 'videocam-outline' },
   { id: '2', text: 'Organização de Vídeos por Álbuns', icon: 'folder-open-outline' },
-  { id: '3', text: 'Lixeira Ilimitada (Sem travas)', icon: 'trash-outline' },
-  { id: '4', text: 'Experiência Sem Anúncios', icon: 'volume-mute-outline' },
+  { id: '3', text: 'Lixeira Ilimitada', icon: 'trash-outline' },
+  { id: '4', text: 'Experiência Sem Anúncios', icon: 'megaphone-outline' },
   { id: '5', text: 'Apoie o Desenvolvimento', icon: 'heart-outline' },
 ];
 
@@ -162,92 +162,3 @@ export default function DonateScreen({ onBack }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Theme.colors.background },
-  header: {
-    height: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderColor: Theme.colors.border,
-  },
-  backBtn: { flexDirection: 'row', alignItems: 'center' },
-  backText: { color: Theme.colors.primary, fontSize: 16, fontWeight: '600', marginLeft: 4 },
-  title: { fontSize: 18, fontWeight: '700', color: Theme.colors.text },
-  content: { padding: 24, paddingBottom: 40 },
-  heroSection: { alignItems: 'center', marginBottom: 32 },
-  premiumBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 179, 180, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: Theme.colors.primary,
-  },
-  heading: { fontSize: 32, fontWeight: '800', color: Theme.colors.text, marginBottom: 8 },
-  subheading: {
-    fontSize: 15,
-    color: Theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 20,
-  },
-  benefitsList: {
-    backgroundColor: Theme.colors.surface,
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-  },
-  benefitItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  benefitIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: Theme.colors.surfaceContainer,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  benefitText: { fontSize: 15, color: Theme.colors.text, fontWeight: '500' },
-  offersSection: { marginBottom: 24 },
-  packageCard: {
-    backgroundColor: Theme.colors.surface,
-    borderRadius: 20,
-    padding: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: Theme.colors.border,
-  },
-  packageTitle: { fontSize: 18, fontWeight: '700', color: Theme.colors.text, marginBottom: 4 },
-  packageDesc: { fontSize: 13, color: Theme.colors.textSecondary },
-  packagePrice: { fontSize: 20, fontWeight: '800', color: Theme.colors.primary },
-  restoreBtn: { padding: 12, alignItems: 'center', marginBottom: 20 },
-  restoreBtnText: { color: Theme.colors.textSecondary, fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
-  noOffers: { padding: 40, alignItems: 'center' },
-  noOffersText: { color: Theme.colors.textMuted, textAlign: 'center' },
-  securityNote: {
-    fontSize: 12,
-    color: Theme.colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 999,
-  },
-  overlayText: { color: '#fff', marginTop: 16, fontSize: 16, fontWeight: '600' },
-});

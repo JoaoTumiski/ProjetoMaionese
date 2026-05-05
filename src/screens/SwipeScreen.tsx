@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import * as MediaLibrary from 'expo-media-library';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import styles from '../styles/swipeStyles';
+import styles from './styles/SwipeScreenStyles';
 import { useUndo } from '../hooks/useUndo';
 import { useResetGallery } from '../hooks/useResetGallery';
 import SwipeDeck, { SwipeDeckHandle, Item as DeckItem } from '../components/SwipeDeck';
@@ -294,7 +294,7 @@ export default function SwipeScreen({
       </View>
       <View style={styles.deckWrap}>{renderDeckArea()}</View>
       <View style={styles.hint}>
-        <Text style={styles.hintText}>Deslize para triar seu acervo</Text>
+        <Text style={styles.hintText}>Deslize para selecionar a opção</Text>
         <Text style={styles.hintTextSmall}>ESQUERDA: LIXEIRA  •  DIREITA: MANTER</Text>
       </View>
     </SafeAreaView>

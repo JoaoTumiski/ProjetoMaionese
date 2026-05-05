@@ -8,7 +8,7 @@ import {
   GestureResponderEvent,
   PanResponderGestureState,
 } from 'react-native';
-import styles, { CARD_WIDTH, CARD_HEIGHT } from '../styles/swipeStylesOrganize';
+import styles, { CARD_WIDTH, CARD_HEIGHT } from '../screens/styles/OrganizeSwipeScreenStyles';
 
 const { width } = Dimensions.get('window');
 const DEFAULT_SWIPE_THRESHOLD = width * 0.28;

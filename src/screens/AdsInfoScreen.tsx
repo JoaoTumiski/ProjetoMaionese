@@ -3,16 +3,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
-  Dimensions,
   Alert,
   Animated,
   SafeAreaView,
 } from 'react-native';
-import Theme from '../styles/theme';
-
-const { width } = Dimensions.get('window');
+import styles from './styles/AdsInfoScreenStyles';
 
 type Props = {
   onSkip: () => void;
@@ -37,7 +33,7 @@ export default function AdsInfoScreen({ onSkip, onDonate, onContinue }: Props) {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fade]);
 
   function handleSkip() {
     if (count === 0) onSkip();
@@ -96,109 +92,3 @@ export default function AdsInfoScreen({ onSkip, onDonate, onContinue }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Theme.colors.background },
-  content: { flex: 1 },
-  header: {
-    height: 70,
-    paddingHorizontal: 24,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  skipText: {
-    fontFamily: Theme.typography.fontFamily,
-    color: Theme.colors.textMuted,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  center: { flex: 1, paddingHorizontal: 40, alignItems: 'center', justifyContent: 'center' },
-  iconBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: Theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-  },
-  icon: { fontSize: 32 },
-  title: {
-    fontFamily: Theme.typography.fontFamily,
-    fontSize: 32,
-    fontWeight: '700',
-    color: Theme.colors.text,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontFamily: Theme.typography.fontFamily,
-    fontSize: 14,
-    color: Theme.colors.primary,
-    fontWeight: '600',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginTop: 8,
-    marginBottom: 40,
-  },
-  card: {
-    backgroundColor: Theme.colors.surface,
-    borderRadius: 24,
-    padding: 24,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-    marginBottom: 40,
-  },
-  cardText: {
-    fontFamily: Theme.typography.fontFamily,
-    fontSize: 15,
-    color: Theme.colors.textSecondary,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  primaryBtn: {
-    backgroundColor: Theme.colors.primaryContainer,
-    height: 64,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  primaryBtnText: {
-    fontFamily: Theme.typography.fontFamily,
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 18,
-  },
-  secondaryBtn: {
-    height: 64,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-  },
-  secondaryBtnText: {
-    fontFamily: Theme.typography.fontFamily,
-    color: Theme.colors.textSecondary,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  footer: {
-    padding: 32,
-    alignItems: 'center',
-  },
-  footerHint: {
-    fontFamily: Theme.typography.fontFamily,
-    fontSize: 11,
-    color: Theme.colors.textMuted,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-});

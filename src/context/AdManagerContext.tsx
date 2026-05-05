@@ -2,13 +2,20 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PremiumContext } from './PremiumContext';
+import { InterstitialAd, AdEventType } from 'react-native-google-mobile-ads';
+import { adService } from '../services/adService';
+
+// Instância global do Intersticial
+const interstitialId = adService.getInterstitialId();
+const interstitial = InterstitialAd.createForAdRequest(interstitialId);
 
 type AdManagerCtx = {
   requestShowAd: () => Promise<boolean>;
   canShowAdNow: () => Promise<boolean>;
   getNextAllowedTimestamp: () => number | null;
   forceResetLastShown: () => Promise<void>;
-  forceAllowOnce: () => Promise<void>; // allow next requestShowAd() immediately (one-time)
+  forceAllowOnce: () => Promise<void>;
+  showInterstitial: () => Promise<boolean>;
 };
 
 const STORAGE_KEY_LAST_SHOWN = '@ad:last_shown_ts';
@@ -112,17 +119,79 @@ export const AdManagerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [saveNextAllowed]);
 
-  // nova função: força que a próxima requestShowAd() seja permitida imediatamente.
   const forceAllowOnce = useCallback(async () => {
     try {
-      // set nextAllowed to a timestamp in the past so canShowAdNow will succeed
       const past = Date.now() - 1000;
-      await saveNextAllowed(past); // persist so hydrate state matches
+      await saveNextAllowed(past);
       nextAllowedRef.current = past;
     } catch (e) {
       console.warn('AdManager forceAllowOnce failed', e);
     }
   }, [saveNextAllowed]);
+
+  const showInterstitial = useCallback((): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (isPremium || premiumLoading) {
+        resolve(false);
+        return;
+      }
+      
+      if (interstitial.loaded) {
+        let isResolved = false;
+
+        const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+          if (!isResolved) {
+            isResolved = true;
+            unsubscribeClosed();
+            unsubscribeError();
+            resolve(true);
+          }
+        });
+
+        const unsubscribeError = interstitial.addAdEventListener(AdEventType.ERROR, () => {
+          if (!isResolved) {
+            isResolved = true;
+            unsubscribeClosed();
+            unsubscribeError();
+            resolve(false);
+          }
+        });
+
+        try {
+          interstitial.show();
+        } catch (e) {
+          if (!isResolved) {
+            isResolved = true;
+            unsubscribeClosed();
+            unsubscribeError();
+            resolve(false);
+          }
+        }
+      } else {
+        interstitial.load();
+        resolve(false);
+      }
+    });
+  }, [isPremium, premiumLoading]);
+
+  // Monitora e carrega o Intersticial
+  useEffect(() => {
+    const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
+      console.log('AdManager: Interstitial Loaded');
+    });
+    const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+      console.log('AdManager: Interstitial Closed');
+      markShownNow();
+      interstitial.load(); // Pré-carrega o próximo
+    });
+
+    interstitial.load();
+
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeClosed();
+    };
+  }, [markShownNow]);
 
   const value: AdManagerCtx = {
     requestShowAd,
@@ -130,6 +199,7 @@ export const AdManagerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     getNextAllowedTimestamp,
     forceResetLastShown,
     forceAllowOnce,
+    showInterstitial,
   };
 
   return <AdManagerContext.Provider value={value}>{children}</AdManagerContext.Provider>;

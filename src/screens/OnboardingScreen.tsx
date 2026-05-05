@@ -2,15 +2,10 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  Image,
   TouchableOpacity,
-  Dimensions,
   SafeAreaView,
 } from 'react-native';
-import Theme from '../styles/theme';
-
-const { width } = Dimensions.get('window');
+import styles from './styles/OnboardingScreenStyles';
 
 type Props = {
   onSkip: () => void;
@@ -19,7 +14,7 @@ type Props = {
 
 const SLIDES = [
   {
-    title: 'Acervo Imaculado',
+    title: 'Galeria Impecável',
     desc: 'Sua biblioteca de fotos é o seu legado. Remova o excesso e preserve apenas a perfeição.',
     icon: 'CG',
   },
@@ -73,87 +68,3 @@ export default function OnboardingScreen({ onSkip, onNext }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Theme.colors.background },
-  header: {
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingHorizontal: 24,
-  },
-  skip: {
-    fontFamily: Theme.typography.fontFamily,
-    color: Theme.colors.textMuted,
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-  },
-  iconBox: {
-    width: 100,
-    height: 100,
-    borderRadius: 30,
-    backgroundColor: Theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-  },
-  icon: { fontSize: 44 },
-  title: {
-    fontFamily: Theme.typography.fontFamily,
-    fontSize: 32,
-    fontWeight: '700',
-    color: Theme.colors.text,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  desc: {
-    fontFamily: Theme.typography.fontFamily,
-    fontSize: 16,
-    color: Theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  footer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  pager: { flexDirection: 'row', alignItems: 'center', marginBottom: 40 },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Theme.colors.surfaceLight,
-    marginHorizontal: 6,
-  },
-  dotActive: {
-    width: 24,
-    backgroundColor: Theme.colors.primary,
-  },
-  nextButton: {
-    height: 60,
-    backgroundColor: Theme.colors.primaryContainer,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'stretch',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  nextText: {
-    fontFamily: Theme.typography.fontFamily,
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 18,
-    letterSpacing: 0.5,
-  },
-});
